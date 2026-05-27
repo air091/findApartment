@@ -26,7 +26,7 @@ export async function register(
         .json({ success: false, message: "All fields are required" });
 
     // create collection and document
-    const newUser = await db.collection("users").add({
+    const documentRef = await db.collection("users").add({
       profileUrl,
       firstname,
       lastname,
@@ -39,10 +39,19 @@ export async function register(
       role,
       status: "active",
     });
+    const user = await documentRef.get();
 
+    if (!user.exists)
+      return response
+        .status(404)
+        .json({ success: false, message: "No user found" });
+    const data = user.data();
+    if (!data) return response.status(404).json({ message: "No data" });
+
+    const { password: _, ...safeUser } = data;
     return response
       .status(201)
-      .json({ success: true, message: "User created", user: newUser });
+      .json({ success: true, message: "User created", user: safeUser });
   } catch (error) {
     console.error(error);
     return response
